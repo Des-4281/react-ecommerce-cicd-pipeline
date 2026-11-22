@@ -1,0 +1,1 @@
+export const signOut = jest.fn(() => Promise.resolve());
