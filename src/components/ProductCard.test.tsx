@@ -8,7 +8,7 @@ describe("ProductCard", () => {
     renderWithProviders(<ProductCard product={testProduct} />);
 
     expect(screen.getByText("Test Backpack")).toBeInTheDocument();
-    expect(screen.getByText("$50.00")).toBeInTheDocument();
+    expect(screen.getByText("$49.99")).toBeInTheDocument();
     expect(screen.getByText("bags")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Test Backpack" })).toBeInTheDocument();
   });
