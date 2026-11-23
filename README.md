@@ -1,6 +1,8 @@
-# E-Commerce Store
+# E-Commerce Store with CI/CD
 
-An online store built with React, TypeScript, Redux Toolkit, React Query, and Firebase. Users create an account, browse products stored in Firestore, add them to a cart, and place orders that are saved to their order history. Logged-in users can also add, edit, and delete products.
+An online store built with React, TypeScript, Redux Toolkit, React Query, and Firebase, with automated testing and deployment. Users create an account, browse products stored in Firestore, add them to a cart, and place orders that are saved to their order history. Logged-in users can also add, edit, and delete products. Every push to `main` builds the app and runs the tests with GitHub Actions, and the app deploys to Vercel only if the tests pass.
+
+**Live site:** https://react-ecommerce-cicd-eta.vercel.app
 
 ## Features
 
@@ -29,8 +31,8 @@ An online store built with React, TypeScript, Redux Toolkit, React Query, and Fi
 1. Clone and install:
 
    ```bash
-   git clone https://github.com/Des-4281/ecommerce-store.git
-   cd ecommerce-store
+   git clone https://github.com/Des-4281/react-ecommerce-cicd-pipeline.git
+   cd react-ecommerce-cicd-pipeline
    npm install
    ```
 
@@ -85,6 +87,7 @@ An online store built with React, TypeScript, Redux Toolkit, React Query, and Fi
 | `npm run build` | Type-checks and builds the app into `dist/` |
 | `npm run preview` | Serves the built app locally |
 | `npm run lint` | Runs ESLint |
+| `npm test` | Runs the Jest unit and integration tests |
 
 ## Pages
 
@@ -130,8 +133,13 @@ src/
   components/ProductCard.tsx     One product with its Add to Cart button
   components/ProductImage.tsx    Image with a placeholder fallback
   components/RequireAuth.tsx     Sends logged-out visitors to the login page
+  components/*.test.tsx          Unit and integration tests
   pages/                         Home, Cart, Login, Register, Profile, Manage Products,
                                  Order History, Order Detail, and Not Found pages
+  test/renderWithProviders.tsx   Test helper: wraps components in Redux, Router, and Auth
+  test/testProduct.ts            Fake product shared by the tests
+  test/mocks/                    Fake Firebase and CSS modules used only during tests
+.github/workflows/main.yml       CI/CD pipeline: build, test, then deploy to Vercel
 ```
 
 ## How it works
@@ -141,6 +149,33 @@ src/
 - **React Query** fetches products and orders and caches them. After a product is added, edited, or deleted, or an order is placed, `invalidateQueries` refetches the data so every page shows the change.
 - **Redux Toolkit** handles the cart. Totals are calculated by selectors, and `store.subscribe` saves the cart to sessionStorage after every change.
 - **Security rules** let each user read and write only their own profile and orders. Anyone can view products; only logged-in users can change them.
+
+## Testing & CI/CD
+
+### Running the tests
+
+```bash
+npm test
+```
+
+Tests use Jest and React Testing Library. Firebase is replaced with fakes during tests (see `moduleNameMapper` in `jest.config.js`), so tests never touch the real database.
+
+| Test file | Type | What it checks |
+|---|---|---|
+| `src/components/ProductCard.test.tsx` | Unit | Shows the title, price, category, and image; clicking Add to Cart adds the product to the Redux cart |
+| `src/components/NavBar.test.tsx` | Unit | Shows Login/Register when logged out; shows the user's email and calls `signOut` on Logout when logged in |
+| `src/components/AddToCart.integration.test.tsx` | Integration | Clicking Add to Cart in `ProductCard` updates the cart count in `NavBar` through the shared Redux store |
+
+### Pipeline
+
+The workflow in `.github/workflows/main.yml` runs on every push to `main`:
+
+1. **test**: installs dependencies with `npm ci`, runs `npm run build`, then runs `npm test`. If any test fails, the job fails.
+2. **deploy**: runs only after `test` passes (`needs: test`). It builds the app with the Vercel CLI and deploys it to production.
+
+Vercel's own Git deployments are turned off in `vercel.json`, so the app is deployed only through this pipeline, after the tests pass.
+
+The deploy job needs three GitHub repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`. The six `VITE_FIREBASE_*` values from `.env.local` are set as Production environment variables in the Vercel project.
 
 ## License
 
